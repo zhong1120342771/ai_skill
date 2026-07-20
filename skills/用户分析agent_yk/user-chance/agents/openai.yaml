@@ -1,0 +1,7 @@
+interface:
+  display_name: "User Chance"
+  short_description: "默认体验转转，模拟用户状态并输出机会点"
+  default_prompt: "Use $user-chance to run a Zhuanzhuan real-app user experience experiment from a persona, goal, and safety boundary. Resolve Android endpoints first, use the User Simulation Kernel so actions follow persona priors, goal_parameter_map, decision_concern_map, evidence_seeking_behavior, route hypotheses, attention filters, dynamic user state, local_information_maturity, and target_entity_shift constraints. Report decision_status, user_decision, stop_reason, stop_proof, behavior assessment, sample validity, concern coverage, evidence seeking behavior, target entity shift reasoning, experience problems, product opportunities, and evidence links."
+
+policy:
+  allow_implicit_invocation: true

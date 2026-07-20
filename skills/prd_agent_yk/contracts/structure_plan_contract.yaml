@@ -1,0 +1,182 @@
+# 结构计划中核心改动对象的研发启动阻塞契约。
+# 注意：以下 key 供脚本读取，不要翻译 key。
+required_cco_plan_fields:
+  - "id"
+  - "name"
+  - "blocks_engineering_start"
+  - "blocker_refs"
+
+# 可选：用于解释为什么拆成这些 CCO。机器只做轻量 Review note，
+# 不把 CCO 拆分判断做成硬闸门。
+optional_cco_plan_fields:
+  - "change_unit"
+  - "split_rationale"
+  - "merge_review"
+
+cco_split_principles:
+  split_when_any_of:
+    - "independent_product_intent"
+    - "independent_user_path"
+    - "independent_release_or_rollback"
+    - "independent_acceptance"
+    - "independent_system_boundary"
+    - "independent_reuse_value"
+  merge_when_any_of:
+    - "shared_trigger_conditions"
+    - "shared_main_flow"
+    - "shared_fallback"
+    - "shared_acceptance"
+    - "dimension_only"
+
+blocks_engineering_start_enum:
+  - true
+  - false
+
+blocker_ref_pattern: "6-R[0-9]+"
+
+# 需求成立检查点。用于记录策略拍板前，背景、用户、目标、范围是否已经成立。
+# 机器只做状态一致性检查，不判断四件事本身是否业务合理。
+demand_establishment_fields:
+  - "status"
+  - "confirmation_mode"
+  - "summary"
+  - "inferred_fields"
+  - "user_action"
+  - "blocks_strategy_signoff"
+
+demand_establishment_status_enum:
+  - "display_passed"
+  - "confirmation_required"
+  - "accepted"
+  - "modified"
+  - "assumed"
+  - "blocked"
+  - "pending"
+
+demand_establishment_confirmation_mode_enum:
+  - "display"
+  - "confirm"
+  - "N/A"
+
+demand_establishment_user_action_enum:
+  - "not_required"
+  - "accepted"
+  - "modified"
+  - "proceed_with_assumption"
+  - "pending"
+
+demand_establishment_summary_fields:
+  - "background"
+  - "users"
+  - "goal"
+  - "scope"
+
+# 存量查询证据记录。结构计划建议包含 retrieval_evidence；
+# 机器校验只做最小一致性检查，不判断检索结果是否业务充分。
+retrieval_evidence_fields:
+  - "scan_required"
+  - "scan_level"
+  - "scan_reason"
+  - "deep_query_required"
+  - "triggered"
+  - "trigger_reason"
+  - "business_map"
+  - "historical_prd"
+  - "dev_fallback"
+  - "dependency_judgement"
+  - "fact_classification"
+
+retrieval_source_fields:
+  - "status"
+  - "source_scope"
+  - "source_root_uri"
+  - "query_scope"
+  - "source_uri"
+  - "findings"
+
+retrieval_source_status_enum:
+  - "checked"
+  - "not_checked"
+  - "not_found"
+  - "unavailable"
+  - "N/A"
+
+retrieval_scan_level_enum:
+  - "none"
+  - "light"
+  - "deep"
+
+retrieval_dependency_impact_enum:
+  - "none"
+  - "low"
+  - "medium"
+  - "high"
+
+retrieval_dependency_handling_enum:
+  - "proceed_as_incremental"
+  - "proceed_with_assumption"
+  - "ask_user"
+  - "dev_fallback"
+  - "block"
+
+retrieval_query_scope_enum:
+  - "specified_root"
+  - "specified_subtree"
+  - "global_search"
+  - "local_file"
+  - "user_provided"
+  - "unavailable"
+  - "N/A"
+
+business_map_source_scope_enum:
+  - "default_business_map"
+  - "user_provided_business_map"
+  - "not_checked"
+  - "unavailable"
+  - "N/A"
+
+historical_prd_source_scope_enum:
+  - "default_historical_prd_library"
+  - "user_provided_historical_prd_library"
+  - "local_file"
+  - "test_export"
+  - "not_checked"
+  - "unavailable"
+  - "N/A"
+
+# 行为 Delta 检查。用于结构计划内部记录复杂策略 / 存量改造需求的行为闭合情况；
+# 机器校验只做软提醒，不作为第四闸门。
+behavior_delta_fields:
+  - "triggered"
+  - "draft_after_retrieval"
+  - "closure_before_prd"
+
+behavior_delta_draft_fields:
+  - "changed_behaviors"
+  - "scenarios"
+  - "unresolved_scenarios"
+
+behavior_delta_closure_fields:
+  - "checked"
+  - "unresolved_scenarios"
+  - "handling_summary"
+
+behavior_delta_scenario_fields:
+  - "given"
+  - "when"
+  - "then"
+  - "status"
+  - "handling"
+
+behavior_delta_status_enum:
+  - "closed"
+  - "assumption"
+  - "blocker"
+  - "needs_signoff"
+  - "N/A"
+
+behavior_delta_handling_enum:
+  - "include_in_signoff"
+  - "write_as_assumption"
+  - "write_as_blocker"
+  - "no_action"

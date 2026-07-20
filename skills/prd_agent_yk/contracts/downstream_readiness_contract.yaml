@@ -1,0 +1,22 @@
+# 下游关注契约。
+# 兼容说明：文件名暂保留 downstream_readiness_contract.yaml，避免旧脚本和引用断裂；
+# v0.7.4 起用户可见语义已调整为 downstream attention / 下游关注，不再表示“下游可启动检查”。
+# 注意：以下 key 供脚本读取，不要翻译 key。
+strategy_impact_enum:
+  - "是"
+  - "否"
+  - "N/A"
+
+required_columns:
+  - "协作方"
+  - "关注内容"
+  - "为什么需要关注"
+  - "是否可能影响产品策略"
+  - "建议处理阶段"
+
+default_roles:
+  - "研发"
+  - "设计"
+  - "测试"
+  - "数据"
+  - "运营/客服"

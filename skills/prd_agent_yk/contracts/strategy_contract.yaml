@@ -1,0 +1,224 @@
+# 策略型需求识别、分级、拍板和策略计划契约。
+# 注意：以下 key、枚举值和机器字段供脚本与结构计划读取，不要翻译 key。
+trigger_logic:
+  downstream_impact_cannot_trigger_alone: true
+  full_strategy_assessment_requires_any_of:
+    - "explicit_type.matched"
+    - "decision_nature.matched"
+  downstream_impact_usage:
+    - "classify_strategy_level"
+    - "decide_required_outputs"
+    - "upgrade_assumption_or_blocker"
+
+explicit_strategy_types:
+  - "strategy"
+  - "scoring"
+  - "recommendation"
+  - "distribution"
+  - "sorting"
+  - "prioritization"
+  - "resource_allocation"
+  - "hit_rule"
+  - "threshold"
+  - "weight"
+  - "frequency_control"
+  - "conflict_handling"
+  - "兴趣"
+  - "评分"
+  - "推荐"
+  - "分发"
+  - "排序"
+  - "优先级"
+  - "资源位"
+  - "倾斜"
+  - "命中"
+  - "阈值"
+  - "权重"
+  - "频控"
+  - "冲突"
+
+decision_actions:
+  - "selection"
+  - "ranking"
+  - "allocation"
+  - "hit_rule"
+  - "prioritization"
+  - "strength_judgment"
+  - "resource_tilt"
+  - "rule_calculation"
+  - "personalized_display"
+  - "goal_optimization"
+
+downstream_impacts:
+  - "page_display"
+  - "resource_allocation"
+  - "engineering_path"
+  - "interface_input"
+  - "acceptance_judgment"
+  - "data_metric"
+  - "experiment_result"
+  - "business_goal"
+
+strategy_levels:
+  lightweight:
+    full_strategy_plan_required: false
+    solution_readiness_summary_required: false
+    required_outputs:
+      - "recommendation_rule"
+      - "signoff_items"
+      - "acceptance_points"
+      - "lightweight_reason"
+    forbidden_when:
+      - "multi_object_competition"
+      - "weight_or_threshold"
+      - "resource_distribution"
+      - "conflict_handling_required"
+      - "affects_engineering_path"
+      - "affects_core_acceptance"
+  standard:
+    full_strategy_plan_required: true
+    solution_readiness_summary_required: false
+    required_outputs:
+      - "strategy_plan"
+    applies_when:
+      - "single_goal"
+      - "limited_input_signals"
+      - "limited_resource_scope"
+      - "limited_conflict"
+      - "local_page_or_rule_impact"
+  complex:
+    full_strategy_plan_required: true
+    solution_readiness_summary_required: true
+    required_outputs:
+      - "strategy_plan"
+      - "solution_readiness_summary"
+      - "blocker_ledger"
+    upgrade_when_any_of:
+      - "multi_signal"
+      - "multi_object"
+      - "multi_resource"
+      - "multi_goal"
+      - "multi_conflict"
+      - "affects_core_business_goal"
+      - "affects_experiment_result"
+      - "affects_downstream_start"
+
+required_strategy_assessment_fields:
+  - "triggered"
+  - "trigger_reasons"
+  - "strategy_level"
+  - "output_requirement"
+  - "reason"
+
+required_lightweight_fields:
+  - "lightweight_reason"
+
+required_strategy_plan_fields:
+  - "level"
+  - "strategy_type"
+  - "related_cco"
+  - "strategy_goal"
+  - "target_users"
+  - "target_objects"
+  - "input_signals"
+  - "fallback_rules"
+  - "example_users"
+  - "confirmation_required"
+
+input_signal_required_fields:
+  - "name"
+  - "source"
+  - "status"
+  - "meaning"
+  - "missing_handling"
+
+input_signal_status_enum:
+  - "confirmed"
+  - "assumption"
+  - "blocker"
+  - "N/A"
+
+resource_mapping_required_fields:
+  - "strategy_result"
+  - "surface"
+  - "display_priority"
+  - "replace_or_mix"
+  - "fallback"
+  - "status"
+
+resource_mapping_optional_fields:
+  - "frequency_cap"
+  - "conflict_handling"
+  - "blocks_engineering_start"
+
+strategy_signoff_required_when:
+  strategy_level: "complex"
+  confirmation_required: "not_empty"
+
+strategy_signoff_required_fields:
+  - "required"
+  - "status"
+  - "user_choice"
+  - "user_choice_evidence"
+  - "fuzzy_confirmation_detected"
+  - "signoff_items"
+
+strategy_signoff_status_enum:
+  - "pending"
+  - "accepted"
+  - "modified"
+  - "skipped_with_blocker"
+
+strategy_signoff_user_choice_enum:
+  - "A"
+  - "B"
+  - "C"
+  - "unknown"
+
+signoff_item_required_fields:
+  - "id"
+  - "item"
+  - "status"
+  - "user_choice"
+  - "user_choice_evidence"
+  - "recommended_value"
+  - "alternatives"
+  - "impact_if_unconfirmed"
+  - "default_handling"
+  - "blocker_ref"
+
+signoff_item_status_enum:
+  - "pending"
+  - "accepted"
+  - "modified"
+  - "skipped_with_blocker"
+
+signoff_record_required_fields:
+  - "agent_prompt_type"
+  - "user_raw_reply"
+  - "interpreted_choice"
+  - "interpreted_action"
+  - "fuzzy_confirmation_detected"
+  - "followup_required"
+
+signoff_agent_prompt_type_enum:
+  - "strategy_signoff_card"
+  - "strategy_signoff_followup"
+  - "modified_strategy_summary"
+  - "prd_generation_after_signoff"
+
+signoff_interpreted_action_enum:
+  - "accept_recommendation"
+  - "modify_strategy"
+  - "skip_signoff_with_blocker"
+  - "unknown"
+
+forbidden_weak_patterns:
+  - "强 / 中 / 弱"
+  - "高优先级"
+  - "低频曝光"
+  - "资源位倾斜"
+  - "根据实际情况"
+  - "由算法确认"
+  - "由研发确认"
+  - "后续补充"

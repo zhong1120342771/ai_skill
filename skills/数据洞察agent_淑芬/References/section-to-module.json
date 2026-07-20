@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "note": "首页洞察 section_id → 模块 切分常量 + 页面范围配置。被 Scripts/qa_check.py / render_charts.py / run_module_baseline.py / run_module_click_conv_aov.py 与数据分析 sub-agent 共享读入,不允许 sub-agent 在跑批时再次推断或重切。2026-07-13 起默认扩到四页(G1001-G1004)。2026-07-15 起 11 核心模块:108(feed商品卡片→商卡feed流)与 109(feed轮播图/feed 运营位)拆开,不再合并——109 是可点运营位(点击跳转落地页,见分析要求和说明.md §商卡Feed流),CTR 显著低于 108,合并会掩盖其低点击信号。如需调整,先在 References/分析要求和说明.md 改业务定义,再回头改这里。",
+  "verified_from_dim": "link_id in (G1001,G1002,G1003,G1004) 于 2026-07-09 + 2026-07-15 实查权威维表 hdp_zhuanzhuan_dim_global.dim_zpm_page_section_info_full_1d_0p,各 section_id→section_name 逐页一致(同一套位置模型)。权威真名:101搜索栏/102大促三切分/103金刚位/105回收模块/106场馆TAB/108 feed商品卡片/109 feed轮播图/113登录浮层/115协议入口/121 feed心智条/165新人/300品类TAB/301品牌墙/302栏目区/500底部tab区域。品牌墙权威名=301(非121;121是feed心智条)。113登录浮层/115协议入口是容器/浮层类(见 container_sections)。741 全表查无。事件表 section_name_zh 全不可信(106显示已废弃、300显示默认曝光tab、301显示预估回收价问号、500显示补货查询板块),一律以权威维表为准。",
+  "pages": ["G1001", "G1002", "G1003", "G1004"],
+  "page_names": {
+    "G1001": "首页",
+    "G1002": "奢品馆",
+    "G1003": "兴趣圈",
+    "G1004": "数码集"
+  },
+  "home_page": "G1001",
+  "primary_page": "G1001",
+  "pages_note": "默认四页对比;参数化双模——sub-agent/脚本可用 --pages 或把本数组改成 ['G1001'] 切回单页模式,其余口径不变。primary_page(G1001 首页)是机会计算器/conv_aov 的主排页,场馆页(G1002/3/4)供结构参考。",
+  "section_to_module": {
+    "101": "搜索框",
+    "106": "场馆tab",
+    "300": "品类tab",
+    "301": "品牌墙",
+    "102": "大促banner",
+    "103": "金刚位",
+    "105": "回收模块",
+    "165": "新人条",
+    "302": "栏目区",
+    "108": "商卡feed流",
+    "109": "feed轮播图"
+  },
+  "core_modules": [
+    "搜索框",
+    "场馆tab",
+    "品类tab",
+    "品牌墙",
+    "大促banner",
+    "金刚位",
+    "回收模块",
+    "新人条",
+    "栏目区",
+    "商卡feed流",
+    "feed轮播图"
+  ],
+  "user_layers": ["z0", "z1-z3", "z4-z5"],
+  "user_sources_expected_min": 3,
+  "page_ctr_offpage_strip": {
+    "note": "页面级 UV-CTR 分子剔除「离场型」点击(点了就离开本页),只保留页内有效点击。仅作用于 §1 页面级汇总 CTR;§2 模块矩阵/§3 增量/§4 分层用全口径点击。剔按 UV 去重。品类tab(300)/品牌墙(301)不剔(馆内换品类/看品牌,不离页)。",
+    "strip_venue_tab_section": "106",
+    "strip_venue_tab_pages": ["G1002", "G1003", "G1004"],
+    "strip_venue_tab_pages_note": "场馆tab(106)点了切到别的场馆页=离场,G1002/3/4 剔;G1001 首页不剔(首页场馆tab视为首页内交互,历史口径)。",
+    "strip_bottom_nav_section": "500",
+    "strip_bottom_nav_pages": ["G1001", "G1002", "G1003", "G1004"],
+    "strip_bottom_nav_pages_note": "底部导航栏(500,权威名底部tab区域)点了切到App别的一级页=离场,四页统一剔;实际只 G1001 有 section500,故仅影响首页(首页因此从92%降到70%)。"
+  },
+  "venue_tab_cap": {
+    "note": "场馆tab(section106)曝光埋点漏报,ratio_to_home = 场馆tab曝光UV / 该页整体曝光UV < 0.90 触发 cap,exposure_uv 改记为该页整体曝光UV,uv_ctr 用新分母重算。逐页判定。这是分母修正,与 page_ctr_offpage_strip 的分子剔除是两件事。",
+    "section": "106",
+    "threshold": 0.90
+  },
+  "container_sections": {
+    "note": "高曝光但结构性 0 点击的容器/浮层/协议类 section。2026-07-15 实查权威维表 dim_zpm_page_section_info_full_1d_0p 确认身份,不是低效业务模块,不进入 11 核心模块统计,也不当机会点。登记在此替代过去笼统归 '其他' 静默丢弃——分析时据此解释'为什么这个高曝光编号被排除',避免像 shufen-homepage-data-insight 那样把它们当'字典缺口/低效机会'反复重跑。",
+    "113": {"name": "登录浮层", "class": "浮层容器", "reason": "登录浮层曝光,非可点内容位,0 点击属预期"},
+    "115": {"name": "协议入口", "class": "协议/法务入口", "reason": "协议入口曝光,非内容分发位,0 点击属预期"},
+    "741": {"name": null, "class": "未映射待确认", "reason": "权威维表 G1001-G1004 及全表均查无此 section_id,疑似动态注入/废弃位;待埋点 Owner 确认后再决定是否纳入,当前按 '其他' 排除"}
+  },
+  "unmapped_policy": "未列入 section_to_module 且未登记在 container_sections 的 section_id → '其他';NaN/空值 → '未映射'。两者都不计入 11 核心模块统计。container_sections 里的编号也走 '其他' 排除,但保留身份说明。"
+}

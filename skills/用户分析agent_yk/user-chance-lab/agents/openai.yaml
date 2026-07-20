@@ -1,0 +1,7 @@
+interface:
+  display_name: "User Chance Lab"
+  short_description: "批量组织真实 App 用户体验实验并聚合机会点"
+  default_prompt: "Use $user-chance-lab to run a 5-round batch user experience experiment and produce an aggregated opportunity report."
+
+policy:
+  allow_implicit_invocation: true
