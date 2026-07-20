@@ -1,4 +1,3 @@
-# regenerable data & artifacts
 data_storage/
 outputs/
 visualizations/
@@ -12,13 +11,10 @@ analysis_reports/
 *.jpeg
 *.pdf
 *.log
-# python caches
 __pycache__/
 *.pyc
-# runtime caches / snapshots
 .snapshot.json
 *.snapshot.json
-# secrets (never commit)
 .env
 *.key
 *.pem
