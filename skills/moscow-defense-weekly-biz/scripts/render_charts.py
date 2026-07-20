@@ -150,6 +150,15 @@ def annotate_group(ax, series, pct=False, fontsize=7.5):
                         xytext=(dx, dy), ha='center', va=va,
                         fontsize=fontsize, color=color)
 
+    # 统一给 y 轴顶部/底部留白：标签往上偏时不顶子图标题，往下偏时不被裁。
+    # 所有折线图共用 annotate_group，一处扩边所有图受益。
+    all_ys = [y for items in bucket.values() for (y, _, _) in items]
+    if all_ys:
+        lo, hi = min(all_ys), max(all_ys)
+        cur_lo, cur_hi = ax.get_ylim()
+        span = (hi - lo) or (abs(hi) or 1.0)
+        ax.set_ylim(min(cur_lo, lo - span * 0.15), max(cur_hi, hi + span * 0.28))
+
 
 def force_week_ticks(ax, weeks):
     """把所有周的日期都强制设为 xtick，避免 matplotlib 自动稀疏后丢掉最后一周"""
@@ -180,8 +189,8 @@ def render_monthly_trend():
     fig = plt.figure(figsize=(20, 12), dpi=150)
     fig.suptitle(f"大盘整体核心指标 月度趋势（2025 vs 2026）  ·  截至 {WEEK_END}",
                  fontsize=15, color=COLOR_LABEL, y=0.99)
-    gs = fig.add_gridspec(2, 12, hspace=0.45, wspace=0.85,
-                          left=0.04, right=0.98, top=0.91, bottom=0.07)
+    gs = fig.add_gridspec(2, 12, hspace=0.55, wspace=0.85,
+                          left=0.04, right=0.98, top=0.88, bottom=0.07)
 
     def plot_one(ax, col, title, pct=False, fmt_int=False):
         series = []
@@ -195,7 +204,7 @@ def render_monthly_trend():
             series.append((xs, ys, color))
         annotate_group(ax, series, pct=pct, fontsize=8)
         style_ax(ax)
-        ax.set_title(title, fontsize=11, color=COLOR_LABEL, pad=10)
+        ax.set_title(title, fontsize=11, color=COLOR_LABEL, pad=14)
         ax.set_xticks(range(1, 13))
         ax.set_xticklabels([f'{m}月' for m in range(1, 13)], fontsize=8)
         ax.legend(loc='lower right', fontsize=8, frameon=False)

@@ -2,6 +2,11 @@
 -- 输出文件：06_monthly_trend.csv
 -- 取数范围：dt >= 2025-01-01（覆盖 2025 全年 + 2026 至今）
 -- 月口径：substring(dt, 1, 7) AS 月份
+--
+-- 【最新月同期对齐 / MTD】占位 ${outFileSuffix} = week_end（如 2026-07-19）。
+-- 当前月及其去年同月（如 2026-07 与 2025-07）只统计到 week_end 的「日」（如 <=19），
+-- 与 26 年 MTD 时间窗口对齐，避免 25 年整月 vs 26 年月中的口径错配；
+-- 其余历史完整月不截断，保持整月 avg。
 
 select
     tag_01
@@ -25,4 +30,9 @@ from
     hdp_zhuanzhuan_tmp_global.tmp_dws_msk_zmt_app_v2_di
 where
     dt >= '2025-01-01'
+    -- 最新月同期对齐：当前月 + 去年同月只截到 week_end 当天的日；其余整月保留
+    and (
+        substring(dt, 6, 2) <> substring('${outFileSuffix}', 6, 2)
+        or day(dt) <= day('${outFileSuffix}')
+    )
 group by 1,2,3;
