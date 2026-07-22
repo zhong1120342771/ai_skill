@@ -1,0 +1,5 @@
+# 真实凭证与本地配置，永不进仓库
+.credentials.local
+.credentials.local.bak*
+.local-sql-paths.local
+.local-sql-paths.local.bak*

@@ -1,0 +1,6 @@
+interface:
+  display_name: "58星河跑数"
+  short_description: "探活星河→拿参考SQL→探表→验证生命周期→跑SQL回读结果"
+  default_prompt: "Use $跑数 to probe StarRiver connectivity, fetch reference SQL from user input or local history, probe Hive table structure, verify dt range against table lifecycle before submitting, run SQL and summarize the result."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,10 @@
+# 本地参考 SQL 搜索路径 - 仅本机使用，不要提交、不要分享
+# 每行一个绝对路径（目录或文件），# 开头的行是注释
+# skill 的 search-sql 子命令会在这些路径 + 默认路径（~/claude-output、~/.claude/projects）里 grep 关键词找参考 SQL
+#
+# 首次跑数时若本文件不存在，skill 会先扫默认路径，再问你是否要补充其他路径，
+# 你补充的路径会被写入本文件（同目录下 .local-sql-paths.local），下次直接用。
+#
+# 示例：
+# /Users/zz/ai/project/my_biz/
+# /Users/zz/Documents/sql_refs/
