@@ -49,11 +49,11 @@ class XingheExplorer:
     # 内部方法
     # ------------------------------------------------------------------
 
-    def _post(self, endpoint: str, data: dict) -> dict:
+    def _post(self, endpoint: str, data: dict, timeout: int = 30) -> dict:
         url = f"{self.api_base}{endpoint}"
         headers = get_auth_headers()
         try:
-            resp = self.session.post(url, headers=headers, json=data, timeout=30)
+            resp = self.session.post(url, headers=headers, json=data, timeout=timeout)
             resp.raise_for_status()
             result = resp.json()
             if result.get("code") != 0:
@@ -109,6 +109,7 @@ class XingheExplorer:
         sql_engine: int = DEFAULT_SQL_ENGINE,
         export_type: int = EXPORT_TYPE,
         biz_time: str = None,
+        submit_timeout: int = 30,
     ) -> int:
         """
         运行 SQL 查询，返回 execute_id。
@@ -118,6 +119,7 @@ class XingheExplorer:
             sql_engine: 1=智能切换, 2=sparksql, 4=starrocks(默认), 5=hive
             export_type: 导出类型，默认 6=http 导出
             biz_time:   基准时间，如 "2024-06-03 15:16:44"
+            submit_timeout: 提交请求的 socket 超时秒数(重 SQL 编译慢时调大)
         """
         data = {
             "oa": self.oa,
@@ -127,7 +129,7 @@ class XingheExplorer:
         }
         if biz_time:
             data["biz_time"] = biz_time
-        result = self._post("/team/doc/run", data)
+        result = self._post("/team/doc/run", data, timeout=submit_timeout)
         return result["execute_id"]
 
     def run_doc_by_id(self, doc_id: int, biz_time: str = None) -> int:

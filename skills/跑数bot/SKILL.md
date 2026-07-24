@@ -1,9 +1,9 @@
 ---
-name: 泡泡bot
-description: 连接 58 星河 / One-Service 执行 Hive 或 Spark SQL，自动探查 Hive 表结构、分区和样例数据，基于业务问题编写 SQL、提交取数、下载结果并总结。内置参数化 SQL 模板库（templates/），高频分析骨架优先套模板不现写。也覆盖「找表」场景：用户只给业务问题或字段词、没给具体表名时，先扫本地历史 SQL/文档，再用 show tables 去星河搜，给出按相关度排序的候选清单并标注敏感等级（L1-L4）与生命周期。用户提到 泡泡bot、跑数、58星河、星河平台、Hive取数、Spark取数、跑SQL、读数、查Hive表、找表、搜表、表名、敏感等级、L3、L4、生命周期、TTL、全量表、增量表、_full、_1d、理解表结构、数据探查接口或需要 agent 自动写 SQL 并取回结果时使用。
+name: 跑数bot
+description: 连接 58 星河 / One-Service 执行 Hive 或 Spark SQL，自动探查 Hive 表结构、分区和样例数据，基于业务问题编写 SQL、提交取数、下载结果并总结。内置参数化 SQL 模板库（templates/），高频分析骨架优先套模板不现写。也覆盖「找表」场景：用户只给业务问题或字段词、没给具体表名时，先扫本地历史 SQL/文档，再用 show tables 去星河搜，给出按相关度排序的候选清单并标注敏感等级（L1-L4）与生命周期。用户提到 跑数bot、跑数、58星河、星河平台、Hive取数、Spark取数、跑SQL、读数、查Hive表、找表、搜表、表名、敏感等级、L3、L4、生命周期、TTL、全量表、增量表、_full、_1d、理解表结构、数据探查接口或需要 agent 自动写 SQL 并取回结果时使用。
 ---
 
-# 泡泡bot — 58 StarRiver Hive Query
+# 跑数bot — 58 StarRiver Hive Query
 
 把业务问题转成 Hive/Spark 查询并通过 58 星河 One-Service 执行。
 

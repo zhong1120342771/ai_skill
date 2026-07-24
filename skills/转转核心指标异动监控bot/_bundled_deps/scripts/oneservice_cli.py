@@ -18,9 +18,11 @@ import csv
 import io
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime
 from urllib.parse import urlencode
@@ -42,12 +44,25 @@ def get_credentials():
     return oa, ak
 
 
+def _urlopen_retry(url_or_req, timeout, retries=5, backoff=3):
+    """对瞬时网络错误（SSL握手超时/连接超时）重试，避免单次抖动打断长任务轮询"""
+    last_err = None
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(url_or_req, timeout=timeout) as resp:
+                return resp.read()
+        except (urllib.error.URLError, socket.timeout) as e:
+            last_err = e
+            if attempt < retries - 1:
+                time.sleep(backoff)
+    raise last_err
+
+
 def submit_sql(sql, oa, ak):
     data = urlencode({"sql": sql, "oaName58": oa, "accessKey": ak}).encode()
     req = urllib.request.Request(API_SUBMIT, data=data)
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read())
+    result = json.loads(_urlopen_retry(req, timeout=30))
     if result.get("respCode") != "0":
         raise RuntimeError(f"提交失败: {result}")
     execute_id = result["respData"]["data"]["execute_id"]
@@ -58,8 +73,7 @@ def poll_progress(execute_id, poll_interval=2, max_wait=600):
     start = time.time()
     while time.time() - start < max_wait:
         url = f"{API_PROGRESS}/{execute_id}"
-        with urllib.request.urlopen(url, timeout=15) as resp:
-            result = json.loads(resp.read())
+        result = json.loads(_urlopen_retry(url, timeout=15))
         if result.get("respCode") != "0":
             raise RuntimeError(f"查询进度失败: {result}")
         progresses = result.get("respData", {}).get("data", [])
@@ -79,8 +93,7 @@ def poll_progress(execute_id, poll_interval=2, max_wait=600):
 
 def get_result_meta(execute_id, oa, ak):
     url = f"{API_RESULT}/{execute_id}?oaName58={oa}&accessKey={ak}"
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        result = json.loads(resp.read())
+    result = json.loads(_urlopen_retry(url, timeout=30))
     if result.get("respCode") != "0":
         raise RuntimeError(f"获取结果失败: {result}")
     return result["respData"]["data"]
@@ -89,14 +102,22 @@ def get_result_meta(execute_id, oa, ak):
 def download_file(url, local_path, oa, ak):
     separator = "&" if "?" in url else "?"
     full_url = f"{url}{separator}oaName58={oa}&accessKey={ak}"
-    urllib.request.urlretrieve(full_url, local_path)
+    last_err = None
+    for attempt in range(5):
+        try:
+            urllib.request.urlretrieve(full_url, local_path)
+            return
+        except (urllib.error.URLError, socket.timeout) as e:
+            last_err = e
+            if attempt < 4:
+                time.sleep(3)
+    raise last_err
 
 
 def download_direct(execute_id, oa, ak):
     """直接下载 txt 结果"""
     url = f"{API_DOWNLOAD}/{execute_id}?oaName58={oa}&accessKey={ak}"
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        return json.loads(resp.read())
+    return json.loads(_urlopen_retry(url, timeout=30))
 
 
 def inject_sql_column(csv_path, sql):

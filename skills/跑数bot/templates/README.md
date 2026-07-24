@@ -1,6 +1,6 @@
 # 分析模板库
 
-> 把高频、稳定的分析骨架预写成参数化 SQL 模板，泡泡bot 优先匹配，匹配上**不让 LM 现写**——降低出错概率，提速 5-10 倍。
+> 把高频、稳定的分析骨架预写成参数化 SQL 模板，跑数bot 优先匹配，匹配上**不让 LM 现写**——降低出错概率，提速 5-10 倍。
 
 ## 设计原则
 
@@ -9,14 +9,14 @@
 3. **模板需要被实战验证过才放进来**：必须是跑通过的 case 抽出来的，不能凭想象写
 4. **业务规则变了改模板**：模板 = 单一事实来源，改一次全公司同步
 
-## 触发逻辑（泡泡bot Step 1 第 0 档）
+## 触发逻辑（跑数bot Step 1 第 0 档）
 
 ```
 用户提需求
   ↓
 父 agent 拼 yaml
   ↓
-泡泡bot Step 1：
+跑数bot Step 1：
   第 0 档：先看 templates/ 有没有匹配的模板（按需求类型 + 关键词）✨ 新增
     ├── 有 → 套模板填参数，跳过 Step 2 探表
     └── 无 → 走原 3 档（用户给参考 → 本地搜 → 星河兜底）
@@ -71,7 +71,7 @@
    - validated: 实战验证记录
    - business_statement: 业务描述模板（让业务方审）
 
-2. @lifecycle 注释（继承泡泡bot 的生命周期机制）
+2. @lifecycle 注释（继承跑数bot 的生命周期机制）
 
 3. SQL 主体（用 ${param_name} 占位参数）
 ```
@@ -79,7 +79,7 @@
 ## 怎么用（LM 视角）
 
 ```bash
-# $SKILL_DIR = 泡泡bot skill 根目录；模板库为其子目录 templates/
+# $SKILL_DIR = 跑数bot skill 根目录；模板库为其子目录 templates/
 # 模板匹配上之后，先读模板：
 cat $SKILL_DIR/templates/category_user_profile.sql
 
@@ -91,7 +91,7 @@ sed -e "s/\${cate_first_id}/105/g" \
     $SKILL_DIR/templates/category_user_profile.sql \
     > ~/claude-output/<topic>_query.sql
 
-# 然后按泡泡bot Step 3.5 给用户审（业务描述从模板顶部 yaml 抽取，跟参数化后的 SQL 一起贴）
+# 然后按跑数bot Step 3.5 给用户审（业务描述从模板顶部 yaml 抽取，跟参数化后的 SQL 一起贴）
 ```
 
 ## 怎么加新模板

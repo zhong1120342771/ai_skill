@@ -32,7 +32,7 @@ from typing import List, Set, Tuple
 
 
 SCRIPT_PATH = Path(__file__).resolve()
-SKILL_DIR = SCRIPT_PATH.parent.parent          # 泡泡bot skill 根
+SKILL_DIR = SCRIPT_PATH.parent.parent          # 跑数bot skill 根
 TEMPLATES_DIR = SKILL_DIR / "templates"        # 模板库已内聚为 skill 子目录
 OUTPUT_DIR = Path.home() / "claude-output"
 LOCAL_PATHS_FILE = SKILL_DIR / ".local-sql-paths.local"
