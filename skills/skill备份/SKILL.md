@@ -35,6 +35,34 @@ bash ~/.claude/skills/skill备份/scripts/backup_skills.sh
 token 只需 `public_repo` 权限。token 过期或被撤销后自动推会失败，用 `scripts/update_token.sh` 换新。
 **红线**：token 只进本机凭证库，绝不提交进仓库；脚本推送失败时会把日志里的 token 打码。
 
-## 定时
-每日 cron（durable）在固定时间跳入本 skill 扫描变动并推送。
-注意：Claude Code 的 recurring cron 约 7 天自动过期，过期后需重新 `CronCreate` 续排。
+## 定时（macOS launchd，不依赖 Claude 会话）
+每天 **20:07** 由系统级 launchd agent `com.zmt.skill-backup` 直接跑 `backup_skills.sh`，
+和 Claude 会话完全解耦——只要 Mac 开着机就会执行；关机/睡眠错过的那次，唤醒后 launchd 会补跑一次。
+
+> 为什么不用 Claude Code 的 cron：会话级 cron 是内存态，REPL 一关就失效；durable recurring cron 约 7 天自动过期。做长期每天例行不可靠，故迁到 launchd。
+
+- plist 位置：`~/Library/LaunchAgents/com.zmt.skill-backup.plist`
+- 运行日志：`~/.claude/skills/skill备份/backup.out.log`（stdout）、`backup.err.log`（stderr）
+
+### 运维命令
+```bash
+# 看它在不在、上次退出码（第二列 0 = 正常）
+launchctl list | grep skill-backup
+
+# 看最近一次跑的输出（NO_CHANGES / PUSHED_OK / PUSH_FAILED）
+tail -20 ~/.claude/skills/skill备份/backup.out.log
+
+# 改完 plist 后重载（先卸再装）
+launchctl unload ~/Library/LaunchAgents/com.zmt.skill-backup.plist
+launchctl load  ~/Library/LaunchAgents/com.zmt.skill-backup.plist
+
+# 不等到点，立刻手动触发一次验证
+launchctl start com.zmt.skill-backup
+```
+
+### 换机器/重装后恢复
+1. 确认 `backup_skills.sh` 里的 `REMOTE_URL` 指向 `zhong1120342771/ai_skill`。
+2. 配好 `~/.git-credentials` 的 token（见「认证」；含 `public_repo` 权限）。
+3. 把 `com.zmt.skill-backup.plist` 放到 `~/Library/LaunchAgents/`，注意 plist 里
+   `HOME`、脚本路径、日志路径都写的是绝对路径 `/Users/zhongmengting/...`，换用户名要一并改。
+4. `launchctl load ~/Library/LaunchAgents/com.zmt.skill-backup.plist`，再用上面的 `list` 确认已加载。
