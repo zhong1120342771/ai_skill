@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zmt.group-auto-reply</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>-u</string>
+        <string>/Users/zhongmengting/.claude/scripts/group_auto_reply.py</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/zhongmengting/.claude</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/Users/zhongmengting/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/zhongmengting</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/zhongmengting/.claude/logs/group_auto_reply.launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhongmengting/.claude/logs/group_auto_reply.launchd.err.log</string>
+</dict>
+</plist>

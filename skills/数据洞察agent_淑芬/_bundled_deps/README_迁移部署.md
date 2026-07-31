@@ -2,7 +2,7 @@
 
 这份 skill 迁移到新电脑，光复制 `数据洞察agent_淑芬/` 目录不够。它运行时还依赖几样不在自己目录里的东西。为了让压缩包自包含，这些依赖已经随包放进了本目录 `_bundled_deps/`。
 
-## 一、随包携带、跑脚本自动还原的依赖
+## 一、随包携带、跑脚本自动还原的依赖（A 线主流水线硬依赖）
 
 `_bundled_deps/` 里按 `~/.claude` 的相对结构镜像了 3 个依赖：
 
@@ -58,6 +58,19 @@ export ONESERVICE_ACCESS_KEY="..."
 pip3 install requests   # xinghe_client 唯一的第三方依赖；其余脚本只用标准库
 ```
 
+### 4. B 线（数据问答）跨 bot 依赖——刻意不进包，按需另装
+
+淑芬有两条线：A 线是五步机会点主流水线（上面 install_deps.sh 还原的 3 个依赖就够跑）；B 线是数据问答分诊器，收到一次性数据问题时会分诊到别的 bot 取数。B 线分诊到消电 / 一体化 / 核心指标异动 / 自定义取数时，会去读这几个 bot 的表和 SQL 骨架：
+
+| B 线领域 | 依赖 bot | 目标机没装的后果 |
+|---|---|---|
+| 消电 / 莫斯科保卫战 | `moscow-defense-weekly-biz`(+`-app`) | 该领域问答不可用 |
+| 一体化（线上线下） | `一体化项目日报数据bot` | 该领域问答不可用 |
+| 品类漏斗 / 曝光绝对值 | `转转核心指标异动监控bot` | 该领域问答不可用 |
+| 自定义 SQL / AB 分组 | `跑数bot` | 兜底问答不可用 |
+
+这些是各自独立演进的 bot，**刻意不进 `_bundled_deps`**——冻进包会拿到过期口径、SQL 骨架 rot（撞"过期骨架当真源"红线）。**A 线主流水线不依赖它们，目标机没装也照常跑**；只有用到 B 线对应领域问答时，才需在目标机单独部署对应 bot。前端首页（B 线 §3）用的是淑芬本体自己的 `Scripts/*.sql` + `References/section-to-module.json`，无外部依赖。
+
 ## 三、部署后自查清单
 
 按顺序确认：
@@ -68,6 +81,7 @@ pip3 install requests   # xinghe_client 唯一的第三方依赖；其余脚本�
 4. `lark-cli auth status` 显示 user + bot 都 ready。
 5. 五个环境变量都 export 了。
 6. `python3 -c "import requests"` 不报错。
+7. （可选，仅用 B 线数据问答时）确认对应 bot 已装：`moscow-defense-weekly-biz` / `一体化项目日报数据bot` / `转转核心指标异动监控bot` / `跑数bot`。A 线主流水线不需要这步。
 
 ## 四、data_storage/ 里的历史 CSV
 

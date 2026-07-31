@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-首页洞察 Step1 取数编排器（dt=2026-07-21）。
+首页洞察 Step1 取数编排器（参数化：dt 走命令行，不写死）。
 两阶段执行：
   阶段A（串行阻塞）：data1 用户抽样池 → 落盘 + user_source 命中率 >=95% 校验。
   阶段B（并发提交）：data2-2 / data3-2 / data4-2 / dau_full 四条硬产物并发提交给星河。
@@ -9,14 +9,31 @@ data5(conv_aov)、data6(baseline) 由各自固化 runner 单独跑（各自内�
 
 所有硬产物落 ~/.claude/data_storage/，走星河 Hive 引擎(engine=5，含 hash(token))。
 dau_full 无 hash 依赖但同走星河即可。
-硬产物同 dt 幂等：已存在且 meta 校验通过则 [skip]。
+硬产物同 dt 幂等：已存在且 meta 校验通过则 [skip]；--force 无视已有产物全部重跑。
+
+用法：
+  python3 run_step1.py                 # dt 默认 t-1
+  python3 run_step1.py --dt 2026-07-30 # 指定 dt
+  python3 run_step1.py --dt 2026-07-30 --force  # 强制重取（口径/SQL 变更当天用）
 
 凭证全走环境变量（xinghe_config），绝不硬编码。
 """
-import sys, os, json, hashlib, datetime, time
+import sys, os, json, hashlib, datetime, time, argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-DT = "2026-07-21"
+
+def _parse_args():
+    p = argparse.ArgumentParser(description="首页洞察 Step1 取数编排器")
+    p.add_argument("dt_pos", nargs="?", default=None,
+                   help="dt 位置参数（YYYY-MM-DD），兼容旧调用 run_step1.py 2026-07-30")
+    p.add_argument("--dt", default=None, help="dt（YYYY-MM-DD），默认 t-1")
+    p.add_argument("--force", action="store_true", help="无视已有产物全部重跑")
+    a = p.parse_args()
+    dt = a.dt or a.dt_pos or (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    return dt, a.force
+
+
+DT, FORCE = _parse_args()
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(SKILL_DIR, "Scripts")
 DATA_DIR = os.path.expanduser("~/.claude/data_storage")
@@ -39,7 +56,9 @@ def _read_sql(fname):
 
 
 def _meta_ok(csv_path, min_rows=1, check_hitrate=False):
-    """幂等校验：csv 存在且 meta rows>0；data1 再查 user_source 命中率>=95%。"""
+    """幂等校验：csv 存在且 meta rows>0；data1 再查 user_source 命中率>=95%。--force 直接判失效强制重跑。"""
+    if FORCE:
+        return False
     meta_path = csv_path + ".meta.json"
     if not (os.path.exists(csv_path) and os.path.exists(meta_path)):
         return False

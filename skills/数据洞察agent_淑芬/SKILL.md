@@ -79,7 +79,8 @@ Agent tool:
 │   ├── 商品id和品类业务的映射.sql # 商品表 dw_mysql_info_full_1d 建表结构 + info_id→业务/品类官方映射 CASE（只读参考，涉品类/业务颗粒度时用）
 │   ├── qa_check.py           # Step 3 闸口（11 模块 + 四页覆盖校验）
 │   ├── render_charts.py      # Step 4 出 5 张基础图 + 4 张四页对比图（单页模式自动跳过后者）
-│   └── feishu_publish.py     # Step 5 飞书 doc + P2P 推送（Step 4 只出本地产物,不调此脚本）
+│   ├── feishu_publish.py     # Step 5 飞书 doc + P2P 推送（Step 4 只出本地产物,不调此脚本）
+│   └── 新媒承接_*.sql / 新媒承接_出图.py  # 按需查询场景：业务重点名单×平台首次意向流向（不进主流水线，口径见 References/按需查询_新媒承接分析.md）
 ├── assets/                   # 模板/素材
 │   └── report-template.md    # 报告骨架，sub-agent 按此填充
 ├── agents/                   # 独立子 agent 的 .md 文件
@@ -111,6 +112,7 @@ Agent tool:
 | 场景 | 脚本 / SQL | 说明文档 |
 |---|---|---|
 | 用户活跃指标（DAU/MAU/30日活跃留存，分端） | `Scripts/用户活跃指标_DAU_MAU_留存.py`（参数化，推荐）<br>`Scripts/用户活跃指标_DAU_MAU_留存_分端.sql`（三段模板） | `References/按需查询_用户活跃指标.md` |
+| 新媒承接分析（业务重点名单 × 平台首次意向标签 流向分布，整体/仅APP × 大盘/实验组） | `Scripts/新媒承接_{整体版,整体版_实验组,仅app端,仅app端_实验组}.sql`（4 条已验证）<br>`Scripts/新媒承接_出图.py`（匹配率柱状 + 流向堆叠） | `References/按需查询_新媒承接分析.md` |
 
 新增同类按需场景时，按上面的模式加一行：脚本进 `Scripts/`、口径说明进 `References/按需查询_*.md`、在本表登记。
 
@@ -346,9 +348,9 @@ exit(1 if bad else 0)" \
 - **口径权威副本**：CTR/场馆tab cap/ratio 推广/收益折算这几条跨 agent 复用口径的真源在 [`References/口径真源.md`](References/口径真源.md)。各 agent .md 与下面各条仍写有就地操作细节（隔离上下文要就地可读），**任何冲突以 `References/口径真源.md` 为准**；改口径顺序：飞书文档 → 口径真源.md → 各 agent 就地文案。
 - 默认中文输出。
 - **报告固定三层结构**：Step 4 产出的洞察报告从上到下固定三层——**第一层「结论」**(机会点 → 对应策略建议 → 优先级 P0/P1/P2 位 → 指标提升 点击UV/单量/GMV) → **第二层「正文」**(分析框架图 → 整体 → 模块 → 分层 → 迁移/坑位下钻，全量量级) → **第三层「附录」**(①抽样原始数据结果 ②抽样方式和样本质量 ③数据源描述)。骨架见 `assets/report-template.md`。结论层「优先级」由 Step 5 机会计算器回填；「指标提升」的**单量/GMV 由 Step5 强制折算**(乘数来自 `module_click_conv_aov`，Step1 保证产出)，提升型机会必带增量点击 UV + 单量 + GMV，绝不硬编。
-- **场馆tab（section_id=106）曝光埋点修复（cap）**：理论上场馆tab 是首页常驻 tab，曝光 UV 应≈首页曝光 UV；若 `venue_tab.exposure_uv / home_overall.exposure_uv < 90%`（连续多日观察的事实，默认触发），Step 2 必须把 `venue_tab.exposure_uv` 改记为 `home_overall.exposure_uv`；`uv_ctr` 用 `click_uv / home_overall.exposure_uv` 重算。**报告必须显式标注**该替代逻辑触发与原始数字。
-- **CTR 唯一口径 = UV-CTR**（`click_uv / exposure_uv`，"看到这个模块的人里有多少点了一下"）。本流水线**不再产出 PV-CTR**（已废弃）——单次曝光的点击次数对首页业务判读意义不大，坚持单一口径降低混淆。任何 schema/报告/图表/sub-agent 都不应再出现 `pv_ctr` 字段或"PV-CTR"字样；`exposure_pv` / `click_pv` 仍照常采集与上报（机会点 PV 体量、人均曝光 PV 这些量级数还要用），但**不计算 PV-CTR**。
-- **报告正文统一用全量推广量级**:正文所有结论与"个数类"指标(曝光/点击 UV·PV、点击次数、机会点覆盖人数、增量点击 UV 等绝对量)只呈现全量推广值(样本绝对量 × `ratio`,`ratio = dau_full.uv / n_users`),不再样本/全量双写。样本规模(N≈9k)、抽样口径(1/339 哈希桶)、当日 ratio 及来源、关键指标样本原始绝对量统一放**附录**保留供追溯。**比例与统计量**(UV-CTR/覆盖率/spread/χ²/jaccard)与样本/全量无关(分子分母同比放大后数值不变),正文直接用、**不乘 ratio**。统计显著性(χ²/连续天数)在样本上验证,是全量数字的置信背书。`ratio` 分母来自 `Scripts/dau_query.sql`(转转 App distinct token DAU)当日实跑,**不允许硬编码**。
+- **场馆tab（section_id=106）曝光埋点 cap**：`venue_tab.exposure_uv / home_overall.exposure_uv < 90%`（默认触发）时，Step2 把 `venue_tab.exposure_uv` 改记为 `home_overall.exposure_uv`、`uv_ctr` 重算，报告显式标注触发与原始数字。完整替代规则见 [`References/口径真源.md`](References/口径真源.md) §二。
+- **CTR 唯一口径 = UV-CTR**（`click_uv / exposure_uv`）；PV-CTR 已废弃，schema/报告/图表/sub-agent 不出现 `pv_ctr` 或"PV-CTR"，`exposure_pv`/`click_pv` 仍采集作量级但不算 CTR。完整定义见 [`References/口径真源.md`](References/口径真源.md) §一。
+- **报告正文统一用全量推广量级**：绝对量（曝光/点击 UV·PV、点击次数、覆盖人数、增量点击 UV）呈现全量推广值（样本 × `ratio`，`ratio = dau_full.uv / n_users`）；比例/统计量（UV-CTR/覆盖率/χ²/jaccard）不乘 ratio、正文直接用；样本规模/口径/ratio 及来源放附录。`ratio` 分母来自 `Scripts/dau_query.sql` 当日实跑，**不许硬编码**。完整推广算法见 [`References/口径真源.md`](References/口径真源.md) §三。
 - 凭证只走环境变量：星河 `XINGHE_CLIENT_USER` / `XINGHE_CLIENT_SECRET` / `XINGHE_ACCESS_KEY`，One-Service `ONESERVICE_OA` / `ONESERVICE_ACCESS_KEY`，任何脚本都不要硬编码。
 - 飞书发布**当前（2026-06-18 起）只推送给钟梦婷一人 P2P**（`ou_5e572adca6deef8ef21c3b18dfade573`），纯文本格式，不推群。**董亚坤（`ou_95979765a4545fa542b0a5ac47e950c8`）已暂停推送，等用户明确放开再恢复双推**——`LARK_INSIGHT_RECEIVERS` 只放钟梦婷的 open_id。如需调整，改 `LARK_INSIGHT_RECEIVERS` 环境变量并相应更新 cron prompt 与本节。文档默认仅创建者可见；发送方应用为「菜的飞书cli」（appId `cli_aa8e16c998b89cc5`），appSecret 由 `lark-cli config` 在本机管理，任何脚本/SKILL 都不写明文。
 - 业务规则真源在 `References/`，对应飞书文档：飞书文档先变 → References 同步 → 再改 sub-agent 实现。
