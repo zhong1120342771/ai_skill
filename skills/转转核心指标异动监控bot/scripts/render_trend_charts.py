@@ -60,7 +60,9 @@ def monthly_grid(df, last, cur_day, outdir, start_year, start_month):
         return rows
 
     def mtd(seg, y, m):
-        s = pd.Timestamp(y, m, 1); e = pd.Timestamp(y, m, cur_day)
+        s = pd.Timestamp(y, m, 1)
+        month_end = s + pd.offsets.MonthEnd(0)
+        e = pd.Timestamp(y, m, min(cur_day, month_end.day))  # 分析日 day 超过目标月天数时截到月末，避免 31 号回看 6 月越界
         return df[(df.segment == seg) & (df.dt >= s) & (df.dt <= e)]['star_pct'].mean()
 
     months = list(range(1, last.month + 1))
