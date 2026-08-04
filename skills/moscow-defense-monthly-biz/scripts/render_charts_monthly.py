@@ -2,7 +2,7 @@
 莫斯科保卫战月报 - 数据可视化（固化版）
 
 输出 2 张图到 ~/Downloads/msk_monthly_raw/<month>/charts/：
-- monthly_trend_25vs26.png   大盘整体 7 指标月度 25 vs 26（1 图 GridSpec 3+4）
+- monthly_trend_25vs26.png   大盘整体 10 指标月度 25 vs 26（1 图 GridSpec 4+4+2）
 - dim_cvr_mom_vs_yoy.png      5 维度各子项 净支付转化率 月环比 vs 月同比 分组柱状
 
 数据源（月粒度）：
@@ -169,11 +169,11 @@ def render_monthly_trend():
     overall['month'] = overall['月份'].str[5:7].astype(int)
     overall = overall.sort_values('month')
 
-    fig = plt.figure(figsize=(20, 12), dpi=150)
+    fig = plt.figure(figsize=(20, 17), dpi=150)
     fig.suptitle(f"大盘整体核心指标 月度趋势（2025 vs 2026）  ·  截至 {MONTH}",
                  fontsize=15, color=COLOR_LABEL, y=0.99)
-    gs = fig.add_gridspec(2, 12, hspace=0.45, wspace=0.85,
-                          left=0.04, right=0.98, top=0.91, bottom=0.07)
+    gs = fig.add_gridspec(3, 12, hspace=0.42, wspace=0.85,
+                          left=0.04, right=0.98, top=0.93, bottom=0.05)
 
     def plot_one(ax, col, title, pct=False, fmt_int=False):
         series = []
@@ -196,13 +196,16 @@ def render_monthly_trend():
         elif fmt_int:
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, p: f'{int(v):,}'))
 
-    plot_one(fig.add_subplot(gs[0, 0:4]),  'dau-净支付pv转化率', 'dau-净支付pv转化率', pct=True)
-    plot_one(fig.add_subplot(gs[0, 4:8]),  'dau_日均',          'DAU（日均）',        fmt_int=True)
-    plot_one(fig.add_subplot(gs[0, 8:12]), '单量',              '净支付单量（月均）', fmt_int=True)
+    plot_one(fig.add_subplot(gs[0, 0:3]),  'dau-净支付pv转化率', 'dau-净支付pv转化率', pct=True)
+    plot_one(fig.add_subplot(gs[0, 3:6]),  'dau_日均',          'DAU（日均）',        fmt_int=True)
+    plot_one(fig.add_subplot(gs[0, 6:9]),  '单量',              '净支付单量（月均）', fmt_int=True)
+    plot_one(fig.add_subplot(gs[0, 9:12]), '商详uv',            '商详UV（日均）',     fmt_int=True)
     plot_one(fig.add_subplot(gs[1, 0:3]),  '曝光渗透率', '曝光渗透率', pct=True)
     plot_one(fig.add_subplot(gs[1, 3:6]),  '商详到达率', '商详到达率', pct=True)
     plot_one(fig.add_subplot(gs[1, 6:9]),  '下单率',    '下单率',    pct=True)
     plot_one(fig.add_subplot(gs[1, 9:12]), '支付率',    '支付率',    pct=True)
+    plot_one(fig.add_subplot(gs[2, 0:6]),  '商详渗透率', '商详渗透率', pct=True)
+    plot_one(fig.add_subplot(gs[2, 6:12]), '商详转化率', '商详转化率', pct=True)
 
     out = CHARTS / 'monthly_trend_25vs26.png'
     fig.savefig(out, bbox_inches='tight', facecolor='white')
@@ -313,7 +316,7 @@ def safe(name, fn, section, caption):
 
 if __name__ == '__main__':
     safe('monthly_trend_25vs26', render_monthly_trend,
-         '大盘整体', '25 vs 26 月度趋势 - 7 指标')
+         '大盘整体', '25 vs 26 月度趋势 - 10 指标')
     safe('dim_cvr_mom_vs_yoy', render_dim_cvr_mom_vs_yoy,
          '数据拆解', '各维度项 净支付转化率 月环比 vs 月同比')
 

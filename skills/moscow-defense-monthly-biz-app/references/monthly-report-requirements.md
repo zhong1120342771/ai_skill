@@ -170,7 +170,7 @@ DAU
 
 报告保留 2 张图：
 
-- **大盘 monthly_trend_25vs26**：2025 vs 2026 同月对比，7 指标，月粒度（`M月`），从 `01_panel.csv` 整体行取。放「一、月数据回顾」h2 下方。
+- **大盘 monthly_trend_25vs26**：2025 vs 2026 同月对比，10 指标（第一行第四张为商详UV日均折线），月粒度（`M月`），从 `01_panel.csv` 整体行取。放「一、月数据回顾」h2 下方。
 - **维度同比对比 dim_cvr_mom_vs_yoy**：4 维度各子项本月净支付转化率的「月环比 vs 月同比」分组柱状图，从 `01_panel.csv` 4 维度行取（口径经 gen_report_monthly.metric_with_changes）。同比缺失项标 `—`。放「（二）数据拆解」整体漏斗横表之后、各维度 h4 之前。
 
 原「二、重要事项进展」的 5 张分业务图（分端 duan_trend / 商详商列 shangxiang_upgrade / 电子馆 guan_penetration / 新客新媒 xinmei_xinke / 搜推 soutui_bagrate）已随「二」整节移除，不再产出。
