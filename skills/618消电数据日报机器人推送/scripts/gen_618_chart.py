@@ -52,13 +52,13 @@ def main():
     yoy_week_day = meta.get("yoy_week_day")  # e.g. "06-16" (2025同星期)
 
     # 动态计算 x 轴范围：以 t-1 为终点向前滚动 WINDOW_DAYS 天，跨月连续
-    # 6 月大促期天然覆盖在窗口内；跨月后不再无限拉长，聚焦近期趋势
+    # 常态日报固定展示近 30 天滚动窗口（可跨月/跨去年同期）
     from datetime import date as _date, timedelta as _td
-    _y = 2026
+    _y = int(date_str[:4])
     _lm, _ld = int(latest_day.split('-')[0]), int(latest_day.split('-')[1])
     _end = _date(_y, _lm, _ld)
     WINDOW_DAYS = 30
-    _start = max(_date(_y, 6, 1), _end - _td(days=WINDOW_DAYS - 1))
+    _start = _end - _td(days=WINDOW_DAYS - 1)
     all_days = []
     _d = _start
     while _d <= _end:

@@ -1,10 +1,11 @@
--- data4-2 页面访问&app停留时长装配版(优化) = 访问/启停事件 + 用户标签 + 页面名映射(无区域维表)
+-- data4-2 页面访问&页面停留时长装配版(优化) = LengthOfStay 时长事件 + 用户标签 + 页面名映射(无区域维表)
 -- ★ 2026-07-13 默认扩四页:本条 pagetype 不限页面(全量访问,含 G1001-G1004),多出 page_id 列(=actiontype),下游按 page_id 过滤算逐页停留时长。单页模式下游只取 G1001。
 -- ★ 2026-07-10 性能固化:经 dt=2026-07-09 新旧对照实测,行数/token集 全部0误差(口径未变)。
 -- 优化点(join下推): LEFT SEMI JOIN data1 把抽样token过滤推到明细扫描层。
 --   本条 pagetype 不限 G1001(全量页面访问),原装配对全天全量访问事件取datapool再join,数据量三条里最大。
 --   注:2026-07-10并发实测三条净墙钟均约670s,主瓶颈是全分区扫描而非解析,下推省的是无用解析/并发稳定性,非墙钟。字段:原本仅取 eventduration,无可裁。
--- 口径铁律: 1/339抽样 ORDER BY hash(token) LIMIT 10000;pagetype IN(AppStart/AppEnd/zpmshow)。Hive engine=5。
+-- 口径铁律: 1/339抽样 ORDER BY hash(token) LIMIT 10000;pagetype IN(LengthOfStay)。Hive engine=5。
+-- ★ 2026-08-10 时长事件改用 LengthOfStay(页面级停留时长事件): 原 AppStart/AppEnd/zpmshow 混合口径里 AppEnd 是 App 级退出事件,落到单页只覆盖24.5%~37.9%访问用户;LengthOfStay 随页面停留正常上报,四页正时长覆盖 92%~98%。访问PV/UV 也随之改由 LengthOfStay 计。
 WITH data1 AS (
     SELECT dt, token, user_source, user_type
     FROM (
@@ -30,7 +31,7 @@ visit AS (
     FROM hdp_zhuanzhuan_dw_global.dw_log_lego_action_1d ev
     LEFT SEMI JOIN data1 d ON ev.token = d.token
     WHERE ev.dt = '${outFileSuffix}'
-      AND ev.pagetype IN ('AppStart','AppEnd','zpmshow')
+      AND ev.pagetype IN ('LengthOfStay')
 ),
 page_dim AS (
     SELECT page_id, MAX(page_name) AS page_name

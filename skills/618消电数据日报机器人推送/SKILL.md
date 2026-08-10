@@ -20,7 +20,7 @@ metadata:
 **方案文档：** https://zhuanspirit.feishu.cn/wiki/I6llwUEboi9QtKkBjS8cQpXAnlc  
 **绘图脚本：** `scripts/gen_618_chart.py`（本 skill 目录下，复用避免重复造轮子）
 
-> **日期口径（关键）**：`dt` 默认 = t-1，**按 t-1 动态取当月**，不要写死 `2026-06`。同比按 t-1 的年月动态对齐去年同期月份，不再锁 6/1-6/20 窗口。下面各步 SQL 里出现的 `<YYYY-MM>` / `<t-1>` 均按运行日实际值代入。
+> **日期口径（关键）**：`dt` 默认 = t-1，不要写死年月。**趋势对比统一用近 30 天滚动窗口**（今年 t-30~t-1；去年按日期对齐取同 30 天），不再按自然月、不锁任何大促窗口。Step2 就绪检查按 t-1 所在当月查 max_dt 属正常。SQL 里 `<今年start/end>`、`<去年start/end>`、`<t-1>` 均按运行日实际值代入。
 
 ---
 
@@ -90,12 +90,14 @@ print('refresh done:', r.get('previews'))
 
 **⚠️ Hive strict mode 限制：所有 ORDER BY 必须带 `limit 200`，否则报错。**
 
-> **动态月份**：把下面 SQL 里的 `<YYYY-MM>` 换成 t-1 的当月（如 07-09 → `2026-07`），`<YYYY-MM_去年>` 换成去年同月（`2025-07`）。不要写死 6 月。趋势图取当月 1 号起到 t-1，去年同期取同月对照。
+> **趋势窗口 = 近 30 天滚动窗口**（固定，不再按自然月）：今年取 `t-30 ~ t-1`，去年取**日期对齐的同一 30 天窗口**（去年同月同日的 t-1 往前 30 天）。跨月由日期直接圈定，无需再按 `substr(dt,1,7)` 卡月份。
+> 下面 SQL 里 `<今年start>`=t-30、`<今年end>`=t-1；`<去年start>`/`<去年end>`=去年同期对齐窗口（见 Step 5a 计算）。
+> **⚠️ 必须分年各查一次**（今年一条 SQL、去年一条 SQL，各自 `dt between ... limit 200`），Python 端再合并。星河 `previews` 单次约 50 行截断，两年 60 行一条混查会丢掉后半段（典型症状：8 月数据缺失、轴到 08-09 但线只到 07-30）。下面这条合并写法仅示意口径，实跑请拆成两条。
 
 ### 优先：旧表（有 uv_all，数据最完整）
 
 ```sql
--- <YYYY-MM> = t-1 当月；<YYYY-MM_去年> = 去年同月
+-- 近30天滚动窗口（示意口径；实跑请分年各查一次避免 previews 截断）
 select dt, uv_all, pay_pv, detail_uv, exp_uv, order_uv,
   round(pay_pv/uv_all*100,3) as conv_rate,
   round(exp_uv/uv_all*100,2) as exp_rate,
@@ -104,8 +106,8 @@ select dt, uv_all, pay_pv, detail_uv, exp_uv, order_uv,
   round(pay_pv/order_uv*100,2) as pay_rate
 from hdp_zhuanzhuan_tmp_global.tmp_dws_msk_zhibiao_zmt_v2_di
 where tag_01='整体' and wd='整体'
-  and (substr(dt,1,7)='<YYYY-MM>'
-    or substr(dt,1,7)='<YYYY-MM_去年>')
+  and ((dt between '<今年start>' and '<今年end>')
+    or (dt between '<去年start>' and '<去年end>'))
 order by dt limit 200
 ```
 
@@ -170,21 +172,32 @@ yoy_week_date = min(candidates, key=lambda d: abs(d.day - t1.day))
 import json, calendar
 from datetime import date, timedelta
 
-# 按 t-1 动态确定对齐日期（不写死 6 月）
+WINDOW_DAYS = 30
+# 按 t-1 动态确定窗口与对齐日期（不写死月份）
 t1 = date.today() - timedelta(days=1)
-latest_day = t1.strftime('%m-%d')                 # t-1 的月日，如 "07-09"
-y_last, mth = t1.year - 1, t1.month
-weekday = t1.weekday()
+latest_day = t1.strftime('%m-%d')                 # t-1 的月日，如 "08-09"
+prev_day = (t1 - timedelta(days=1)).strftime('%m-%d')   # t-2
+
+# 今年近30天窗口：t-30 ~ t-1
+cy_start = (t1 - timedelta(days=WINDOW_DAYS - 1)).strftime('%Y-%m-%d')
+cy_end   = t1.strftime('%Y-%m-%d')
+
+# 去年日期对齐：去年同月同日为 t-1 对照，往前 30 天
+ly_t1    = date(t1.year - 1, t1.month, t1.day)
+ly_start = (ly_t1 - timedelta(days=WINDOW_DAYS - 1)).strftime('%Y-%m-%d')
+ly_end   = ly_t1.strftime('%Y-%m-%d')
+
+# 同比星期对齐：去年同月内与 t-1 同星期几、最接近同日的那天
+y_last, mth, weekday = t1.year - 1, t1.month, t1.weekday()
 ndays = calendar.monthrange(y_last, mth)[1]
 cands = [date(y_last, mth, i) for i in range(1, ndays + 1)
          if date(y_last, mth, i).weekday() == weekday]
-yoy_week = min(cands, key=lambda d: abs(d.day - t1.day))
-yoy_week_day = yoy_week.strftime('%m-%d')
-prev_day = (t1 - timedelta(days=1)).strftime('%m-%d')   # t-2
+yoy_week_day = min(cands, key=lambda d: abs(d.day - t1.day)).strftime('%m-%d')
 
+# 上面 SQL 的窗口占位符：今年 cy_start/cy_end；去年 ly_start/ly_end
 chart_data = {
-    "last_year": { ... },   # 去年同月全月数据（键沿用脚本约定）
-    "this_year": { ... },   # 今年当月已有数据（含 t-1）
+    "2025": { ... },   # 去年对齐 30 天窗口，键为 "MM-DD"
+    "2026": { ... },   # 今年近 30 天窗口（含 t-1），键为 "MM-DD"
     "meta": {
         "latest_day": latest_day,
         "prev_day": prev_day,
@@ -196,7 +209,7 @@ with open('/tmp/chart_data.json', 'w') as f:
     json.dump(chart_data, f)
 ```
 
-> 绘图脚本 `gen_618_chart.py` 的入参 JSON 结构以脚本实际读取的键为准（历史用 "2025"/"2026" 年份键）；跨年运行时按脚本约定填对应年份键，别被示例里的字面年份限死。
+> 绘图脚本 `gen_618_chart.py` 读取顶层年份键 `"2025"`/`"2026"`（每个是 `{"MM-DD": {...}}`）与 `meta`。跨年运行时按脚本约定填对应年份键。注意去年窗口按**日期对齐**（去年同月同日往前 30 天），画到同一条 x 轴上做同比对比。
 
 **Step 5b：调用绘图脚本**
 
@@ -238,7 +251,7 @@ DAU {DAU}，同比/环比，是否正常。
 
 ---
 
-**图1：去年 vs 今年 当月趋势对比（当月 1 号起，截至 {t-1}）**
+**图1：去年 vs 今年 近30天趋势对比（{t-30} ~ {t-1}）**
 
 ![消电趋势图]({image_key})
 
@@ -287,3 +300,5 @@ lark-cli im +messages-send \
 | 同比星期对齐 | 按 t-1 动态取去年同月，不锁 618 窗口 | 在去年同月内取与 t-1 同星期几、最接近同日的那天 |
 | 误以为 618 结束要停推 | 本 bot 实为莫斯科保卫战常态日报，命名带 618 是遗留 | 长期每天推，不停、不提醒停 |
 | 数据未就绪 | 数仓调度延迟 | 等数据就绪后再推，不强制 |
+| 趋势图轴30天但数据只有当月 | 取数仍按当月拉，只有当月点位 | 取数改近30天窗口（今年 t-30~t-1 + 去年日期对齐同窗口），Step3/Step5a 已改 |
+| 近30天两年合并查只回到一半（如缺8月） | 星河 `previews` 单次约50行截断，60行会被砍 | **分年各查一次**（今年一条、去年一条）再在 Python 合并，别一条 SQL 混查两年 |

@@ -180,7 +180,7 @@
 - **`incremental.home` 必须用 G1001 原始全口径点击 UV 重算**,不能复用 `overall.click_uv_onpage`(剔后值)——历史踩过坑:首页 §3 曝光/点击从全口径错成剔后值,量级失真。
 - `page×module×layer`(`module_layer`)场馆页每格样本很小(如 G1003 各层 14/59/26 人),`uv_ctr` 仅方向参考,不做 χ² 显著性。
 - 场馆tab cap 在 `pages[].modules[]` 内逐页判定(分母换该页 `overall.exposure_uv` 或对应层 `layer_exposure_uv`),规则同主块 `exposure_capped`。
-- **`duration_coverage`**:仅 24.5%~37.9% 访问用户有有效正时长(其余 eventduration 缺失、非负值),`duration_mean_seconds` 只代表有记录的那部分人,报告必须标覆盖率、说明仅组间相对比较。
+- **`duration_coverage`**:改用 LengthOfStay 页面级停留时长事件后,四页正时长覆盖约 92%~98%(实测 2026-08-09:首页92.2%/奢品馆92.6%/兴趣圈95.0%/数码集97.6%);`duration_mean_seconds` 覆盖绝大多数访问用户。仍按实际覆盖率标注,不足 90% 的页面说明仅组间相对比较。(历史 AppStart/AppEnd/zpmshow 混合口径仅覆盖 24.5%~37.9%,已弃用。)
 - 单页模式(`pages=['G1001']`)下 `pages[]` 只有 G1001 一条、`incremental` 各字段 net_new=0,报告退回单页叙事。
 - **场馆tab(section_id=106)曝光埋点 cap 规则**:Step 2 sub-agent 在写 `modules[]` 前必须检查 `venue_tab.exposure_uv / home_overall.exposure_uv`;若 < 0.90,触发 cap——`exposure_uv` 改写为 `home_overall.exposure_uv`,`uv_ctr` 用新分母重算,新增字段 `exposure_capped`(见下示例)记录原始值与触发原因。`exposure_pv` / `click_pv` 不变(仍记录场馆tab 自己的原始 PV);PV-CTR 已废弃故无需置 null。同样规则递归应用到 `by_user_type` 的三个分层(各分层的 `exposure_uv` 改记为 `home_overall.by_user_type[layer].exposure_uv`)。
 
