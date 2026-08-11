@@ -522,6 +522,110 @@ def render_xinmei_xinke():
     return out
 
 
+# ---------- 7. apple_trend_*.png（苹果系列 8 周趋势，整体+5品类各一张） ----------
+
+APPLE_CATS = ['苹果整体', '手机', '平板', '笔记本', '智能手表', '耳机']
+APPLE_CAT_COLOR = {
+    '苹果整体': COLOR_ORANGE, '手机': COLOR_BLUE, '平板': COLOR_GREEN,
+    '笔记本': COLOR_RED, '智能手表': COLOR_PURPLE, '耳机': COLOR_LABEL,
+}
+# 12 指标：量级 4 个（整数）+ 北极星 + 提袋率 + 6 率（百分比），恰好填满 3×4
+APPLE_METRICS = [
+    ('曝光UV', '曝光UV（周日均）', False),
+    ('商详UV', '商详UV（周日均）', False),
+    ('下单UV', '下单UV（周日均）', False),
+    ('支付PV', '支付PV（周日均）', False),
+    ('dau-净支付pv转化率', 'dau-净支付pv转化率', True),
+    ('提袋率', '提袋率（支付PV/曝光UV）', True),
+    ('曝光渗透率', '曝光渗透率', True),
+    ('商详渗透率', '商详渗透率', True),
+    ('商详到达率', '商详到达率', True),
+    ('商详转化率', '商详转化率', True),
+    ('下单率', '下单率', True),
+    ('支付率', '支付率', True),
+]
+
+
+def _apple_trend_df():
+    df = pd.read_csv(DIR / '09_apple_trend.csv', encoding='utf-8-sig')
+    df.columns = [c.strip().lstrip('﻿') for c in df.columns]
+    # 用「对齐周结束」作 x（去年周已 +364 映射到今年日历，供本年/去年虚线叠加）
+    df['x_d'] = pd.to_datetime(df['对齐周结束']).dt.date
+    return df.sort_values('x_d')
+
+
+def _apple_series(sub, col, pct):
+    """取一段(某年某品类)的 (xs, ys)；pct 走 fmt_pct，量级转 float"""
+    xs = sub['x_d'].tolist()
+    if pct:
+        ys = [fmt_pct(v) for v in sub[col].tolist()]
+    else:
+        ys = [None if (isinstance(v, str) and v.strip().upper() in ('', 'NULL')) else float(v)
+              for v in sub[col].tolist()]
+    return xs, ys
+
+
+def _render_apple_one(df, cat):
+    """单个品类一张图：12 指标 mini-trend 拼 3×4 GridSpec；本年实线(标注)+去年同期虚线(同色浅,不标注)"""
+    sub_all = df[df['维度'] == cat].copy()
+    if sub_all.empty:
+        raise ValueError(f"09_apple_trend.csv 无维度={cat}")
+    cur = sub_all[sub_all['年份'] == '本年'].sort_values('x_d')
+    ly = sub_all[sub_all['年份'] == '去年'].sort_values('x_d')
+    if cur.empty:
+        raise ValueError(f"09_apple_trend.csv 维度={cat} 无本年数据")
+    color = APPLE_CAT_COLOR.get(cat, COLOR_ORANGE)
+    all_weeks = cur['x_d'].tolist()  # x 轴锚点以本年周为准
+
+    fig = plt.figure(figsize=(22, 15), dpi=150)
+    fig.suptitle(f"苹果系列 · {cat} 核心指标 8 周趋势（实线本年 / 虚线去年同期）  ·  截至 {WEEK_END}",
+                 fontsize=16, color=COLOR_LABEL, y=0.995)
+    gs = fig.add_gridspec(3, 4, hspace=0.42, wspace=0.28,
+                          left=0.04, right=0.98, top=0.92, bottom=0.06)
+
+    for idx, (col, title, pct) in enumerate(APPLE_METRICS):
+        ax = fig.add_subplot(gs[idx // 4, idx % 4])
+        xs, ys = _apple_series(cur, col, pct)
+        # 去年同期虚线（同色，浅、无标注）
+        if not ly.empty:
+            lxs, lys = _apple_series(ly, col, pct)
+            ax.plot(lxs, lys, color=color, marker='o', markersize=3.5, linewidth=1.4,
+                    linestyle='--', alpha=0.45)
+        # 本年实线
+        ax.plot(xs, ys, color=color, marker='o', markersize=5, linewidth=2.0)
+        annotate_group(ax, [(xs, ys, color)], pct=pct, fontsize=7.5)
+        style_ax(ax)
+        ax.set_title(title, fontsize=11, color=COLOR_LABEL, pad=8)
+        if pct:
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, p: f'{v*100:.2f}%'))
+        else:
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, p: f'{int(v):,}'))
+        force_week_ticks(ax, all_weeks)
+        for lbl in ax.get_xticklabels():
+            lbl.set_rotation(25); lbl.set_ha('right')
+
+    safe_name = {'苹果整体': 'overall', '手机': 'phone', '平板': 'pad',
+                 '笔记本': 'laptop', '智能手表': 'watch', '耳机': 'earphone'}[cat]
+    out = CHARTS / f'apple_trend_{safe_name}.png'
+    fig.savefig(out, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    return out
+
+
+def render_apple_trend():
+    """整体+5品类各一张，返回 list[(cat, Path)]；单品类失败不连坐其他"""
+    df = _apple_trend_df()
+    results = []
+    for cat in APPLE_CATS:
+        try:
+            results.append((cat, _render_apple_one(df, cat)))
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            results.append((cat, None))
+            print(f"[FAIL] apple_trend {cat}: {e}")
+    return results
+
+
 # ---------- 主流程 ----------
 
 def safe(name, fn, section, caption):
@@ -556,6 +660,25 @@ if __name__ == '__main__':
          '分业务-分端', '转转APP/转转小程序/找靓机 4 指标')
     safe('xinmei_xinke', render_xinmei_xinke,
          '分业务-新客新媒', '新客/新媒 × 手机/2_5 CVR + 曝光渗透')
+
+    # 苹果系列 8 周趋势（整体+5品类各一张，插在苹果漏斗表下方）
+    try:
+        for cat, out in render_apple_trend():
+            if out is None:
+                manifest['charts'].append({
+                    "file": f"apple_trend_{cat}.png", "report_section": "苹果系列",
+                    "caption": f"苹果 {cat} 8 周趋势", "render_status": "render_error",
+                    "apple_cat": cat})
+                print(f"[FAIL] apple_trend {cat}")
+            else:
+                manifest['charts'].append({
+                    "file": out.name, "report_section": "苹果系列",
+                    "caption": f"苹果 {cat} 核心指标 8 周趋势", "render_status": "ok",
+                    "apple_cat": cat})
+                print(f"[OK]   apple_trend {cat} -> {out}")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        print(f"[FAIL] apple_trend (all): {e}")
 
     (CHARTS / 'charts_manifest.json').write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')

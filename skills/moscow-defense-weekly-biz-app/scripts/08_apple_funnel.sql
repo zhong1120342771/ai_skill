@@ -156,7 +156,10 @@ select
     ,concat(round((n.ord_cur/n.det_cur-n.ord_pre/n.det_pre)/(n.ord_pre/n.det_pre)*100,2),'%') as `下单率-周环比`
     ,concat(round(n.pay_cur/n.ord_cur*100,2),'%') as `支付率`
     ,concat(round((n.pay_cur/n.ord_cur-n.pay_pre/n.ord_pre)/(n.pay_pre/n.ord_pre)*100,2),'%') as `支付率-周环比`
+    ,concat(round(n.pay_cur/n.exp_cur*100,3),'%') as `提袋率`
+    ,concat(round((n.pay_cur/n.exp_cur-n.pay_pre/n.exp_pre)/(n.pay_pre/n.exp_pre)*100,2),'%') as `提袋率-周环比`
     ,concat(round(n.pay_cur/d.dau_cur*100,3),'%') as `dau-净支付pv转化率`
+    ,concat(round((n.pay_cur/d.dau_cur-n.pay_pre/d.dau_pre)/(n.pay_pre/d.dau_pre)*100,2),'%') as `dau-净支付pv转化率-周环比`
     ,'${outFileSuffix}' as `数据更新日期`
 from num_all n
 cross join dau_wk d

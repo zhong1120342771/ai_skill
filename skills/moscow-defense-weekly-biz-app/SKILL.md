@@ -109,8 +109,9 @@ for f in 01_kpi.csv 02_funnel.csv 03_dim_ss.csv 04_dim_ac.csv \
          supp1.csv supp2.csv supp3.csv supp4.csv; do
   [ -s "$DIR/$f" ] || { echo "[FAIL] missing or empty: $f"; exit 1; }
 done
-# 08_apple_funnel.csv 走 raw 明细表重算,偶尔超时,soft 校验(缺失只告警不阻断)
+# 08/09 苹果系列 走 raw 明细表重算,偶尔超时,soft 校验(缺失只告警不阻断)
 [ -s "$DIR/08_apple_funnel.csv" ] && echo "[OK] 苹果漏斗 08_apple_funnel.csv" || echo "[WARN] 08_apple_funnel.csv 缺失(soft),Step4 苹果章节将跳过"
+[ -s "$DIR/09_apple_trend.csv" ] && echo "[OK] 苹果趋势 09_apple_trend.csv" || echo "[WARN] 09_apple_trend.csv 缺失(soft),Step4 苹果趋势图将跳过"
 echo "[OK] Step 1 取数完成"
 ```
 
