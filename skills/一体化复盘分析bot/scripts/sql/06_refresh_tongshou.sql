@@ -22,7 +22,7 @@ with a1 as
         ,city
         ,concat_ws('-',cate,brand,sku) as skuu
         ,count(case when mart_state not in (4,5,6)then qc_code else null end) as kc_all
-        ,count(case when is_mart=1 and mart_state =3 then qc_code else null end ) as kc_ts
+        ,count(case when is_mart=1 then qc_code else null end ) as kc_ts
     from
     (
         select DISTINCT
